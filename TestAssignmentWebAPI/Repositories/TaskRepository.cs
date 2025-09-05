@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using TestAssignmentWebAPI.Abstractions;
 using Task = System.Threading.Tasks.Task;
 
@@ -10,28 +11,40 @@ public class TaskRepository : ITaskRepository
     {
         _context = context;
     }
-    public Task<Entities.Task> GetTaskByIdAsync(Guid id)
+    public async Task<Entities.Task?> GetTaskByIdAsync(Guid? id)
     {
-        throw new NotImplementedException();
+        if (id is null)
+            return null;
+        
+        return await _context.Tasks.FindAsync(id);       
     }
 
-    public Task<IEnumerable<Entities.Task>> GetAllTasksAsync()
+    public async Task<IEnumerable<Entities.Task>> GetAllTasksAsync()
     {
-        throw new NotImplementedException();
+        return await _context.Tasks.ToListAsync();
     }
 
-    public Task<Entities.Task> AddTaskAsync(Entities.Task task)
+    public async Task<Entities.Task> AddTaskAsync(Entities.Task task)
     {
-        throw new NotImplementedException();
+       await _context.Tasks.AddAsync(task);
+        await _context.SaveChangesAsync();
+        return task;
     }
 
-    public Task UpdateTaskAsync(Entities.Task task)
+    public async Task UpdateTaskAsync(Entities.Task task)
     {
-        throw new NotImplementedException();
+        _context.Tasks.Update(task);
+        await _context.SaveChangesAsync();
     }
 
-    public Task DeleteTaskAsync(Guid id)
+    public async Task DeleteTaskAsync(Guid? id)
     {
-        throw new NotImplementedException();
+        var task = await _context.Tasks.FindAsync(id);
+        if (task != null)
+        {
+            _context.Tasks.Remove(task);
+            await _context.SaveChangesAsync();
+        }
+        
     }
 }

@@ -1,6 +1,19 @@
 using Microsoft.VisualBasic;
 
 namespace TestAssignmentWebAPI.Entities;
+public enum Status
+{
+    Pending = 1,
+    InProgress = 2,
+    Completed = 3
+}
+
+public enum Priority
+{
+    Low = 1,
+    Medium = 2,
+    High = 3
+}
 
 public class Task
 {
@@ -15,19 +28,5 @@ public class Task
 
     public Guid UserId { get; private set; }
     public User User { get; private set; }
-    
-    public enum Status
-    {
-        Pending = 1,
-        InProgress = 2,
-        Completed = 3
-    }
-
-    public enum Priority
-    {
-        Low = 1,
-        Medium = 2,
-        High = 3
-    }
 
 }
