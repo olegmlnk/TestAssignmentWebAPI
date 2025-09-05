@@ -13,9 +13,8 @@ public class UserService : IUserService
         _userRepository = userRepository;
     }
 
-
     public Task<User> RegisterAsync()
-    {
+    { 
         throw new NotImplementedException();
     }
 
@@ -35,7 +34,7 @@ public class UserService : IUserService
     }
 
     public Task<bool> UpdateUserAsync(User user)
-    {
+    {   
         throw new NotImplementedException();
     }
 
