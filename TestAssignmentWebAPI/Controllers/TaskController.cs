@@ -22,7 +22,6 @@ public class TaskController : ControllerBase
     }
     
     [HttpPost("create")]
-    [Authorize]
     public async Task<IActionResult> CreateTaskAsync([FromBody] CreateTaskDto createTaskDto)
     {
         try

@@ -32,9 +32,9 @@ public class TaskService : ITaskService
             UserId = userId
         };
         
-        var createdTask = _taskRepository.AddTaskAsync(task);
+        var createdTask = await _taskRepository.AddTaskAsync(task);
 
-        return MapToResponseDto(task);
+        return MapToResponseDto(createdTask);
     }
 
     public async Task<TaskResponseDto> GetTaskByIdAsync(Guid id, Guid userId)

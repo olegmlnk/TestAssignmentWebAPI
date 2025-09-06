@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using TestAssignmentWebAPI.Abstractions;
 using TestAssignmentWebAPI.Contracts;
+using TestAssignmentWebAPI.Contracts.UserDtos;
 using TestAssignmentWebAPI.Entities;
 using TestAssignmentWebAPI.Exceptions;
 using Task = System.Threading.Tasks.Task;
@@ -31,65 +32,96 @@ public class UserService : IUserService
         _context = context;
     }
 
-    public async Task<RegisterDto> RegisterAsync(RegisterDto registerDto)
-    { 
-        var userExists = await _userRepository.GetByUsernameOrEmailAsync(registerDto.Email);
-
-        if (userExists != null)
+   
+        public async Task<LoginResponseDto> RegisterAsync(RegisterDto registrationDto)
         {
-            throw new UserRegistrationException("User with this email already exists.");
+            _logger.LogInformation("Attempting to register user with username: {Username}", registrationDto.Username);
+
+            // Check if user already exists
+            if (await _userRepository.GetByUsernameOrEmailAsync(registrationDto.Username) != null ||
+                await _userRepository.GetByUsernameOrEmailAsync(registrationDto.Email) != null)
+            {
+                throw new InvalidOperationException("Username or email already exists");
+            }
+
+            // Create new user
+            var user = new User
+            {
+                Username = registrationDto.Username,
+                Email = registrationDto.Email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(registrationDto.Password)
+            };
+
+            var createdUser = await _userRepository.AddUserAsync(user);
+            _logger.LogInformation("User registered successfully with ID: {UserId}", createdUser.Id);
+
+            var token = GenerateJwtToken(createdUser.Id, createdUser.Username);
+
+            return new LoginResponseDto
+            {
+                Token = token,
+                User = new UserResponseDto
+                {
+                    Id = createdUser.Id,
+                    Username = createdUser.Username,
+                    Email = createdUser.Email,
+                    CreatedAt = createdUser.CreatedAt
+                }
+            };
         }
-        
-        var user = new User
-        {
-            Username = registerDto.Username,
-            Email = registerDto.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(registerDto.Password)
-        };
 
-        var result = await _userRepository.AddUserAsync(user);
-        if (result == null) 
+        public async Task<LoginResponseDto> LoginAsync(LoginDto loginDto)
         {
-            throw new UserRegistrationException("User registration failed. Please try again.");
+            _logger.LogInformation("Attempting to login user: {UsernameOrEmail}", loginDto.UsernameOrEmail);
+
+            var user = await _userRepository.GetByUsernameOrEmailAsync(loginDto.UsernameOrEmail);
+            
+            if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
+            {
+                _logger.LogWarning("Invalid login attempt for: {UsernameOrEmail}", loginDto.UsernameOrEmail);
+                throw new UnauthorizedAccessException("Invalid credentials");
+            }
+
+            _logger.LogInformation("User logged in successfully: {UserId}", user.Id);
+
+            var token = GenerateJwtToken(user.Id, user.Username);
+
+            return new LoginResponseDto
+            {
+                Token = token,
+                User = new UserResponseDto
+                {
+                    Id = user.Id,
+                    Username = user.Username,
+                    Email = user.Email,
+                    CreatedAt = user.CreatedAt
+                }
+            };
         }
 
-        return registerDto;
-    }
-
-    public async Task<string> LoginAsync(LoginDto loginDto)
-    {
-        var user = await _context.Users.FirstOrDefaultAsync(
-            u => u.Email == loginDto.UsernameOrEmail || u.Username == loginDto.UsernameOrEmail);
-
-        if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
+        private string GenerateJwtToken(Guid userId, string username)
         {
-            throw new UserLoginException("Invalid username/email or password.");
+            var jwtSettings = _configuration.GetSection("JwtSettings");
+            var key = Encoding.UTF8.GetBytes(jwtSettings["Secret"]);
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                new Claim(ClaimTypes.Name, username),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(JwtRegisteredClaimNames.Iat, new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
+            };
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddMinutes(15),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+
+            return tokenHandler.WriteToken(token);
         }
-
-        return GenerateJwtToken(user);
-    }
-
-    private string GenerateJwtToken(User user)
-    {
-        var jwtSettings = _configuration.GetSection("JwtOptions");
-
-        var claims = new[]
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email)
-        };
-        
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Secret"]));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        
-        var token = new JwtSecurityToken(
-            issuer: jwtSettings["Issuer"],
-            audience: jwtSettings["Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(double.Parse(jwtSettings["ExpirationTimeInMinutes"])),
-            signingCredentials: creds);
-        
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
 }
