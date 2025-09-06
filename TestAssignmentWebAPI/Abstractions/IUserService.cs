@@ -7,6 +7,6 @@ namespace TestAssignmentWebAPI.Abstractions;
 
 public interface IUserService
 {
-    Task RegisterAsync(RegisterDto registerDto);
+    Task<RegisterDto> RegisterAsync(RegisterDto registerDto);
     Task<string> LoginAsync(LoginDto loginDto);
 }

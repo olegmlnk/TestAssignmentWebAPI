@@ -31,9 +31,9 @@ public class UserService : IUserService
         _context = context;
     }
 
-    public async Task RegisterAsync(RegisterDto registerDto)
+    public async Task<RegisterDto> RegisterAsync(RegisterDto registerDto)
     { 
-        var userExists = await _userRepository.GetUserByEmailAsync(registerDto.Email);
+        var userExists = await _userRepository.GetByUsernameOrEmailAsync(registerDto.Email);
 
         if (userExists != null)
         {
@@ -52,6 +52,8 @@ public class UserService : IUserService
         {
             throw new UserRegistrationException("User registration failed. Please try again.");
         }
+
+        return registerDto;
     }
 
     public async Task<string> LoginAsync(LoginDto loginDto)
@@ -65,7 +67,6 @@ public class UserService : IUserService
         }
 
         return GenerateJwtToken(user);
-
     }
 
     private string GenerateJwtToken(User user)

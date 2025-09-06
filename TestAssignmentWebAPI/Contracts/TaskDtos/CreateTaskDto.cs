@@ -1,12 +1,20 @@
 using System.ComponentModel.DataAnnotations;
+using TestAssignmentWebAPI.Entities;
 
 namespace TestAssignmentWebAPI.Contracts.TaskDtos;
 
-public record CreateTaskDto
-(
-    string Title,
-    string Description,
-    DateTime DueDate,
-    string Priority,
-    string Status
-);
+public class CreateTaskDto
+{
+    [Required]
+    [StringLength(200, MinimumLength = 1)]
+    public string Title { get; set; } = string.Empty;
+
+    [StringLength(1000)]
+    public string? Description { get; set; }
+
+    public DateTime DueDate { get; set; }
+
+    public Status Status { get; set; } = Status.Pending;
+
+    public Priority Priority { get; set; } = Priority.Medium;
+}

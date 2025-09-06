@@ -36,7 +36,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.UpdatedAt)
             .HasDefaultValueSql("CURRENT_TIMESTAMP");
         
-        // Example of configuration when user has many tasksS
+        // Example of configuration when User has many tasks
         builder.HasMany(u => u.Tasks)
             .WithOne(t => t.User)
             .HasForeignKey(t => t.UserId)

@@ -16,12 +16,12 @@ public class UserRepository : IUserRepository
 
     public async Task<User?> GetUserByIdAsync(Guid? id)
     {
-        if (id is null)
-        {
-            return null;
-        }
+        var user =  await _context.Users.FindAsync(id);      
         
-        return await _context.Users.FindAsync(id);       
+        if (id is null)
+            return null;
+
+        return user;
     }
 
     public async Task<IEnumerable<User>> GetAllUsersAsync()
@@ -29,22 +29,31 @@ public class UserRepository : IUserRepository
         return await _context.Users.ToListAsync();
     }
 
-    public Task<User?> GetUserByEmailAsync(string email)
-    {
-        return _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+    public async Task<User?> GetByUsernameOrEmailAsync(string usernameOrEmail)
+    { 
+        return await _context.Users
+            .FirstOrDefaultAsync(u => u.Username.ToLower() == usernameOrEmail.ToLower() || 
+                                      u.Email.ToLower() == usernameOrEmail.ToLower());
     }
 
     public async Task<User> AddUserAsync(User user)
     {
-        await _context.Users.AddAsync(user);
+        user.Id = Guid.NewGuid();
+        user.CreatedAt = DateTime.UtcNow;
+        user.UpdatedAt = DateTime.UtcNow;
+        
+        _context.Users.Add(user);
         await _context.SaveChangesAsync();
         return user;
     }
 
-    public async Task UpdateUserAsync(User user)
+    public async Task<User?> UpdateUserAsync(User user)
     {
+        user.UpdatedAt = DateTime.UtcNow;
+        
         _context.Users.Update(user);
         await _context.SaveChangesAsync();
+        return user;
     }   
 
     public async Task DeleteUserAsync(Guid id)

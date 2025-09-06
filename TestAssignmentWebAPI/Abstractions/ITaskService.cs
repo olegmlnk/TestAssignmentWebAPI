@@ -1,10 +1,12 @@
+using TestAssignmentWebAPI.Contracts.TaskDtos;
+
 namespace TestAssignmentWebAPI.Abstractions;
 
 public interface ITaskService
 {
-    Task<Task> CreateTaskAsync(Task task);
-    Task<Task> GetTaskByIdAsync(Guid id);
-    Task<IEnumerable<Task>> GetAllTasksAsync();
-    Task<bool> UpdateTaskAsync(Task task);
-    Task<bool> DeleteTaskAsync(Guid id);
+    Task<TaskResponseDto> CreateTaskAsync(CreateTaskDto taskDto, Guid userId);
+    Task<TaskResponseDto> GetTaskByIdAsync(Guid id, Guid userId);
+    Task<PaginationResultDto<TaskResponseDto>> GetAllTasksAsync(Guid userId, FilterTaskDto filter);
+    Task<TaskResponseDto?> UpdateTaskAsync(Guid id, UpdateTaskDto updateTaskDto, Guid userId);
+    Task<bool> DeleteTaskAsync(Guid id, Guid userId);
 }
