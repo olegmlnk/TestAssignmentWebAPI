@@ -147,6 +147,34 @@ public class TaskController : ControllerBase
         }
     }
     
+    [HttpDelete("delete/{id}")]
+    public async Task<ActionResult> DeleteTask(Guid id)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+                
+            _logger.LogInformation("Deleting task {TaskId} for user {UserId}", id, userId);
+                
+            var deleted = await _taskService.DeleteTaskAsync(id, userId);
+                
+            if (!deleted)
+            {
+                _logger.LogWarning("Task {TaskId} not found for deletion by user {UserId}", id, userId);
+                return NotFound(new { message = "Task not found" });
+            }
+
+            _logger.LogInformation("Task {TaskId} deleted successfully for user {UserId}", id, userId);
+                
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting task {TaskId} for user: {UserId}", id, GetCurrentUserId());
+            return StatusCode(500, new { message = "An error occurred while deleting the task" });
+        }
+    }
+    
     [NonAction]
     private Guid GetCurrentUserId()
     {

@@ -87,7 +87,7 @@ public class TaskService : ITaskService
     public async Task<TaskResponseDto?> UpdateTaskAsync(Guid id, UpdateTaskDto updateTaskDto, Guid userId)
     {
         _logger.LogInformation("Attempting to update task {TaskId} for user {UserId}.", id, userId);
-        
+    
         var existingTask = await _taskRepository.GetTaskByIdAsync(id, userId);
 
         if (existingTask == null)
@@ -95,29 +95,28 @@ public class TaskService : ITaskService
             _logger.LogWarning("Task {TaskId} not found or user {UserId} lacks permission to update it.", id, userId);
             return null;
         }
-        
-        // Update the existing task's properties based on the DTO,
-        // ensuring only provided values are changed.
-        if (!string.IsNullOrEmpty(updateTaskDto.Title))
+    
+        if (!string.IsNullOrWhiteSpace(updateTaskDto.Title))
             existingTask.Title = updateTaskDto.Title;
-        
-        if (updateTaskDto.Description != null)
+
+        if (!string.IsNullOrWhiteSpace(updateTaskDto.Description))
             existingTask.Description = updateTaskDto.Description;
-        
+
         if (updateTaskDto.DueDate.HasValue)
             existingTask.DueDate = updateTaskDto.DueDate.Value;
-            
+        
         if (updateTaskDto.Status.HasValue)
             existingTask.TaskStatus = updateTaskDto.Status.Value;
-            
+        
         if (updateTaskDto.Priority.HasValue)
             existingTask.TaskPriority = updateTaskDto.Priority.Value;
-        
+    
         var updatedTask = await _taskRepository.UpdateTaskAsync(existingTask);
-        
+    
         _logger.LogInformation("Task {TaskId} updated successfully.", updatedTask.Id);
         return MapToResponseDto(updatedTask);
     }
+
 
     public async Task<bool> DeleteTaskAsync(Guid id, Guid userId)
     {
