@@ -1,4 +1,3 @@
-/ ===== README.md =====
 # TestAsignmentWebAPI
 ASP.NET 8.0 Web API for task management with user authentication, built using clean architecture principles and modern development practices.
 
@@ -341,28 +340,39 @@ builder.Services.AddScoped<ITaskService, TaskService>();
 ### 🗄 Database Design
 
 #### User Table
-Users (
-    Id UNIQUEIDENTIFIER PRIMARY KEY,
-    Username NVARCHAR(50) UNIQUE NOT NULL,
-    Email NVARCHAR(100) UNIQUE NOT NULL,
-    PasswordHash NVARCHAR(255) NOT NULL,
-    CreatedAt DATETIME2 DEFAULT GETUTCDATE(),
-    UpdatedAt DATETIME2 DEFAULT GETUTCDATE()
-)
+## Users
 
-#### Task Table
-Tasks (
-    Id UNIQUEIDENTIFIER PRIMARY KEY,
-    Title NVARCHAR(200) NOT NULL,
-    Description NVARCHAR(1000) NULL,
-    DueDate DATETIME2 NULL,
-    Status INT NOT NULL DEFAULT 0,
-    Priority INT NOT NULL DEFAULT 1,
-    CreatedAt DATETIME2 DEFAULT GETUTCDATE(),
-    UpdatedAt DATETIME2 DEFAULT GETUTCDATE(),
-    UserId UNIQUEIDENTIFIER NOT NULL,
-    FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE
-)
+Id (GUID, PK)
+
+Username (Unique)
+
+Email (Unique)
+
+PasswordHash
+
+CreatedAt / UpdatedAt
+
+## Tasks
+
+Id (GUID, PK)
+
+Title
+
+Description
+
+DueDate
+
+Status
+
+Priority
+
+UserId (FK Users)
+
+Indexes:
+
+Users: Username, Email
+
+Tasks: UserId, composite (UserId, Status, Priority, DueDate)
 
 #### Indexes
 - Users: Unique indexes on Username and Email
