@@ -240,23 +240,29 @@ Success Response: 204 No Content
 ## Architecture & Design
 ### Project Structure
 TestAssignmentWebAPI/
+
 ├── Controllers/           # HTTP request handlers
       - UsersController.cs
       - TasksController.cs
+      
 ├── Services/             # Business logic layer
       - UserService.cs
       - TaskService.cs
+      
 ├── Abstractions          #Abstraction layer
       - IUserRepository.cs
       - ITaskRepository.cs
       - IUserService.cs
       - ITaskService.cs
+      
 ├── Repositories/         # Data access layer
       - UserRepository.cs
       - TaskRepository.cs
+      
 ├── Entities/              # Domain entities
       - User.cs
       - Task.cs
+      
 ├── Contracts/  # Data transfer objects
      ├──TaskDtos/
          - CreateTaskDto.cs
@@ -269,7 +275,9 @@ TestAssignmentWebAPI/
          - RegisterDto.cs
          - LoginResponseDto.cs
          - UserResponseDto.cs
+         
 └── ApplicationDbContext.cs  #Database layer
+
 └── Program.cs           # Application entry point
 
 
