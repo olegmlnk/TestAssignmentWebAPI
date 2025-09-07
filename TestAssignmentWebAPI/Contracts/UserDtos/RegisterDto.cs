@@ -1,8 +1,10 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace TestAssignmentWebAPI.Contracts;
 
-public record RegisterDto
-(
-    string Username,
-    string Email,
-    string Password
-);
+public class RegisterDto
+{
+    public string Username { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+}

@@ -40,12 +40,18 @@ public class UserController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
+            // This block handles a specific case, for example, when a user
+            // with the same name already exists. This allows returning a
+            // specific 400 Bad Request error.
             _logger.LogWarning("Registration failed for username {Username}: {Error}", registrationDto.Username,
                 ex.Message);
             return BadRequest(new { message = ex.Message });
         }
         catch (Exception ex)
         {
+            // This block handles any other unexpected errors, such as
+            // database issues, and returns a generic 500 Internal Server
+            // Error to avoid exposing implementation details to the client.
             _logger.LogError(ex, "Unexpected error during registration for username: {Username}",
                 registrationDto.Username);
             return StatusCode(500, new { message = "An error occurred during registration" });
@@ -67,17 +73,23 @@ public class UserController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
+            // This exception handles authorization errors like an incorrect
+            // password or a non-existent user. It returns a 401 Unauthorized.
             _logger.LogWarning("Login failed for {UsernameOrEmail}: {Error}", loginDto.UsernameOrEmail, ex.Message);
             return Unauthorized(new { message = ex.Message });
         }
         catch (Exception ex)
         {
+            // A generic block for unexpected errors to return a 500
+            // Internal Server Error.
             _logger.LogError(ex, "Unexpected error during login for: {UsernameOrEmail}", loginDto.UsernameOrEmail);
             return StatusCode(500, new { message = "An error occurred during login" });
         }
     }
     
     [HttpGet("profile")]
+    [Authorize] // This attribute requires a valid JWT token to be provided
+                // by the user to access the method.
     public async Task<ActionResult<UserResponseDto>> GetProfile()
     {
         try
@@ -87,6 +99,8 @@ public class UserController : ControllerBase
 
             if (user == null)
             {
+                // Returns a 404 Not Found if the user is not found,
+                // even if the token is valid.
                 return NotFound(new { message = "User not found" });
             }
 
@@ -94,33 +108,46 @@ public class UserController : ControllerBase
         }
         catch (Exception ex)
         {
+            // Handles any errors that occurred while retrieving the profile
+            // (e.g., database issues).
             _logger.LogError(ex, "Error retrieving user profile for user: {UserId}", GetCurrentUserId());
             return StatusCode(500, new { message = "An error occurred while retrieving profile" });
         }
     }
 
+    // A private method for securely getting the user ID from the token.
+    [NonAction] // This attribute prevents direct access to the method via
+                // an HTTP request, as it is an internal controller function.
     private Guid GetCurrentUserId()
     {
         _logger.LogInformation("Attempting to get current user ID from claims");
-    
-        // Використовуйте ClaimTypes.NameIdentifier замість JwtRegisteredClaimNames.Sub
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-    
-        _logger.LogInformation("User ID claim value: {UserIdClaim}", userIdClaim);
-    
-        if (string.IsNullOrEmpty(userIdClaim))
+
+        // Using LINQ to find the claim that contains the user ID. This
+        // improves reliability as different providers might use different
+        // claim names ("sub", "nameid", etc.).
+        var userIdClaimValue = User.Claims
+            .Where(c => c.Type == ClaimTypes.NameIdentifier || c.Type == "nameid" || c.Type == "sub" || c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
+            .Select(c => c.Value)
+            .FirstOrDefault();
+
+        _logger.LogInformation("User ID claim value found: {UserIdClaimValue}", userIdClaimValue ?? "null");
+
+        if (string.IsNullOrEmpty(userIdClaimValue))
         {
-            _logger.LogWarning("No NameIdentifier claim found in token");
-            throw new UnauthorizedAccessException("No user ID found in token");
+            _logger.LogWarning("No valid user ID claim found in token.");
+            throw new UnauthorizedAccessException("No user ID found in token.");
         }
-    
-        if (!Guid.TryParse(userIdClaim, out var userId))
+
+        // Tries to parse the string claim value into a Guid object.
+        // If the string has an invalid format, the method returns false,
+        // which allows us to handle the error correctly.
+        if (!Guid.TryParse(userIdClaimValue, out var userId))
         {
-            _logger.LogWarning("Invalid user ID format in token: {UserIdClaim}", userIdClaim);
-            throw new UnauthorizedAccessException("Invalid user ID format in token");
+            _logger.LogWarning("Invalid user ID format in token: {UserIdClaimValue}", userIdClaimValue);
+            throw new UnauthorizedAccessException("Invalid user ID format in token.");
         }
-    
+
         _logger.LogInformation("Successfully parsed user ID: {UserId}", userId);
-        return Guid.Parse(userIdClaim);
+        return userId;
     }
 }
