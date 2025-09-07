@@ -1,4 +1,3 @@
-/ ===== README.md =====
 # TestAsignmentWebAPI
 ASP.NET 8.0 Web API for task management with user authentication, built using clean architecture principles and modern development practices.
 
